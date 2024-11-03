@@ -2,7 +2,7 @@
 #include <SimpleFOC.h>
 #include <Wire.h>  // For I2C
 
-#define POLE_PAIRS 7
+#define POLE_PAIRS 15
 // BLDC motor & driver instance
 BLDCMotor motor = BLDCMotor(POLE_PAIRS);
 BLDCDriver6PWM driver = BLDCDriver6PWM(A_PHASE_UH, A_PHASE_UL, A_PHASE_VH, A_PHASE_VL, A_PHASE_WH, A_PHASE_WL);
@@ -19,7 +19,7 @@ float target_velocity = 0;
 
 // instantiate the commander
 Commander command = Commander(Serial);
-// void doTarget(char* cmd) { command.scalar(&target_velocity, cmd); }
+void doTarget(char* cmd) { command.scalar(&target_velocity, cmd); }
 void doMotor(char* cmd) { command.motor(&motor, cmd); }
 
 void setup() {
@@ -27,12 +27,12 @@ void setup() {
   
   sensor.init();
   // hardware interrupt enable
-  // sensor.enableInterrupts(doA, doB, doC);
+  sensor.enableInterrupts(doA, doB, doC);
   motor.linkSensor(&sensor);
 
   // Driver config
-  driver.voltage_power_supply = 9;
-  driver.voltage_limit = 6;
+  driver.voltage_power_supply = 22;
+  driver.voltage_limit = 1;
   driver.init();
   // link current sense and the driver
   currentSense.linkDriver(&driver);
@@ -47,10 +47,9 @@ void setup() {
  
   // open loop control config
   motor.controller = MotionControlType::velocity;
-  motor.torque_controller = TorqueControlType::voltage;
-  motor.foc_modulation = FOCModulationType::SpaceVectorPWM;
+  // motor.torque_controller = TorqueControlType::voltage;
+  // motor.foc_modulation = FOCModulationType::SpaceVectorPWM;
 
-  // sensor.pullup = Pullup::USE_EXTERN;
   sensor.init();
   sensor.enableInterrupts(doA, doB, doC);
   motor.linkSensor(&sensor);
@@ -59,22 +58,23 @@ void setup() {
   motor.initFOC();
 
   command.add('M',doMotor,"motor");
+  command.add('T', doTarget, "target velocity");
 
   Serial.begin(115200);
   motor.useMonitoring(Serial);
 
   
 
-  motor.monitor_variables = _MON_TARGET | _MON_VEL | _MON_ANGLE;; 
+  // motor.monitor_variables = _MON_TARGET | _MON_VEL | _MON_ANGLE;
   motor.monitor_downsample = 100;
-  // Serial.println("Motor ready!");
-  // Serial.println("Set target velocity [rad/s]");
+  Serial.println("Motor ready!");
+  Serial.println("Set target velocity [rad/s]");
   _delay(1000);
 }
 
 void loop() {
   motor.loopFOC();
-  motor.move();
+  motor.move(target_velocity);
   motor.monitor();
   command.run();
 }
