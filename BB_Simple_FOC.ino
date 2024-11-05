@@ -32,7 +32,7 @@ void setup() {
 
   // Driver config
   driver.voltage_power_supply = 22;
-  driver.voltage_limit = 1;
+  driver.voltage_limit = 4;
   driver.init();
   // link current sense and the driver
   currentSense.linkDriver(&driver);
@@ -43,7 +43,7 @@ void setup() {
   motor.linkCurrentSense(&currentSense);
 
   motor.linkDriver(&driver);
-  motor.voltage_limit = 0.5;   // [V]
+  motor.voltage_limit = 4;   // [V]
  
   // open loop control config
   motor.controller = MotionControlType::velocity;
